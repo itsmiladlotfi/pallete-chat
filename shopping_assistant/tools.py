@@ -63,8 +63,8 @@ def search_products(
             query_parts.append(
                 """
                 AND (
-                    LOWER(ProductName) LIKE ? 
-                    OR LOWER(Description) LIKE ?
+                    ProductName LIKE ? 
+                    OR Description LIKE ?
                 )
             """
             )
@@ -185,7 +185,7 @@ def create_order(
 
                 # Get product details
                 cursor.execute(
-                    "SELECT ProductId, Price, Quantity FROM products WHERE LOWER(ProductName) = LOWER(?)",
+                    "SELECT ProductId, Price, Quantity FROM products WHERE ProductName = ?",
                     (product_name,),
                 )
                 product = cursor.fetchone()

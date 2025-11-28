@@ -11,6 +11,8 @@ from langgraph.graph.message import AnyMessage, add_messages
 from langgraph.prebuilt import tools_condition
 from typing_extensions import TypedDict
 from langchain_groq import ChatGroq  
+from langchain_openai import ChatOpenAI
+
 
 from shopping_assistant.tools import (
     check_order_status,
@@ -27,7 +29,8 @@ os.environ["LANGCHAIN_API_KEY"] = os.getenv("LANGCHAIN_API_KEY")
 os.environ["LANGCHAIN_TRACING_V2"] = os.getenv("LANGCHAIN_TRACING_V2")
 os.environ["LANGCHAIN_ENDPOINT"] = os.getenv("LANGCHAIN_ENDPOINT")
 os.environ["LANGCHAIN_PROJECT"] = os.getenv("LANGCHAIN_PROJECT")
-os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY") # Added this line
+os.environ["GROQ_API_KEY"] = os.getenv("GROQ_API_KEY") 
+os.environ['OPENAI_API_KEY'] = os.getenv("OPENAI_API_KEY")
 
 class State(TypedDict):
     messages: Annotated[list[AnyMessage], add_messages]
@@ -43,8 +46,6 @@ class Assistant:
             customer_id = configuration.get("customer_id", None)
             state = {**state, "user_info": customer_id}
             result = self.runnable.invoke(state)
-            # If the LLM happens to return an empty response, we will re-prompt it
-            # for an actual response.
             if not result.tool_calls and (
                 not result.content
                 or isinstance(result.content, list)
@@ -57,7 +58,7 @@ class Assistant:
          return {"messages": result}
 
 
-llm = ChatGroq(model="llama-3.3-70b-versatile")  # Modified this line
+llm = ChatOpenAI(model="gpt-4.1")  # Modified this line
 
 assistant_prompt = ChatPromptTemplate.from_messages(
     [

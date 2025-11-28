@@ -10,7 +10,7 @@ from shopping_assistant.graph import graph
 
 def set_page_config():
     st.set_page_config(
-        page_title="Shopping Assistant",
+        page_title="Pallete Shop Assisstant",
         layout="wide",
         initial_sidebar_state="expanded",
     )
@@ -53,51 +53,13 @@ def initialize_session_state():
         st.session_state.input_value = ""
         
 
-def setup_sidebar():
-    """Configure the sidebar with agent information and controls."""
-    with st.sidebar:
-        st.image("assets/avatar.jpg", width=100)        # Add a status indicator
-        st.title("Smart Shopping Assistant")
-        st.success("🟢 Online & Ready to assist ")
-        st.markdown("---")
-        if st.button("🔄 Start New Chat", use_container_width=True):
-            for key in list(st.session_state.keys()):
-                del st.session_state[key]
-            st.rerun()
-        
-        st.markdown("#### Features")
-        if st.button("🛒 Browse Products", use_container_width=True):
-            st.session_state.input_value = st.session_state.config["configurable"]["browse_prompt"]
-            
-        if st.button("📦 Place Order", use_container_width=True):
-            st.session_state.input_value = st.session_state.config["configurable"]["order_prompt"]
-            
-        if st.button("🚚 Track Orders", use_container_width=True):
-            st.session_state.input_value = st.session_state.config["configurable"]["track_prompt"]
-            
-        if st.button("🎯 Get Recommendations", use_container_width=True):
-            st.session_state.input_value = st.session_state.config["configurable"]["recommend_prompt"]
-        st.markdown("---")
-        st.markdown(
-            """
-            <div class="sidebar-footer">
-                <div class="by">
-                    by Mohamed BOUABIDI
-                </div>
-            </div>
-        """,
-            unsafe_allow_html=True,
-        )
-
-
 def display_chat_history():
     """Display the chat history."""
     if not st.session_state.messages:
         st.markdown(
             """
             <div style='text-align: center; padding: 30px;'>
-                <h1>👋 Welcome To our Online store !</h1>
-                <p>I assist you to search products, Place and Track orders, and give you my best recommandations !</p>
+                <h1>Pallete Shopping Assisstant</h1>
             </div>
             """,
             unsafe_allow_html=True,
@@ -200,8 +162,6 @@ def main():
     set_page_config()
     set_page_style()
     initialize_session_state()
-    setup_sidebar()
-
     display_chat_history()
 
     if st.session_state.pending_approval:
@@ -209,7 +169,7 @@ def main():
 
     # Bind chat input to the session state key
     if prompt := st.chat_input(
-        "What would you like to order?", 
+        "چه محصولی رو میخوای سفارش بدی؟", 
         key="chat-input",  # Unique key for the chat input
     ):
         if prompt:
