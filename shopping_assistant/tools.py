@@ -138,6 +138,52 @@ def search_products(
             },
         }
 
+@tool
+def add_to_cart(product_name: str, quantity: int) -> Dict[str, any]:
+    """
+    Adds a product to the shopping cart or updates its quantity.
+    """
+    return {
+        "action": "add",
+        "product_name": product_name,
+        "quantity": quantity
+    }
+
+
+@tool
+def remove_from_cart(product_name: str) -> Dict[str, str]:
+    """
+    Removes a product completely from the shopping cart.
+    """
+    
+    return {
+        "action": "remove",
+        "product_name": product_name
+    }
+
+
+@tool
+def update_cart_quantity(product_name: str, quantity: int) -> Dict[str, any]:
+    """
+    Updates quantity of a product in the cart.
+    """
+    return {
+        "action": "update",
+        "product_name": product_name,
+        "quantity": quantity
+    }
+
+
+
+@tool
+def view_cart() -> Dict[str, str]:
+    """
+    Requests to view cart contents.
+    """
+    return {
+        "action": "view"
+    }
+
 
 @tool
 def create_order(
@@ -237,6 +283,116 @@ def create_order(
                 "customer_id": str(customer_id),
             }
 
+@tool
+def confirm_cart_and_create_order(cart: list, customer_id: str) -> dict:
+    # Check if the cart is empty
+    """
+    Finalizes the user's cart and creates the order after user approval.
+    """
+
+    if not cart:
+        return {"status": "error", "message": "کارت شما خالی است"}
+
+    total_amount = Decimal("0")
+    ordered_products = []
+
+    # Open a connection to the database
+    with db_manager.get_connection() as conn:
+        cursor = conn.cursor()
+
+        try:
+            # Start a transaction to ensure consistency
+            cursor.execute("BEGIN TRANSACTION")
+
+            # Insert a new order record
+            cursor.execute(
+                """INSERT INTO orders (CustomerId, OrderDate, Status) 
+                   VALUES (?, ?, ?)""",
+                (customer_id, datetime.now().isoformat(), "Pending"),
+            )
+            order_id = cursor.lastrowid  # Get the newly inserted order ID
+
+            # Loop through each item in the cart and process it
+            for item in cart:
+                product_name = item["ProductName"]
+                quantity = item["Quantity"]
+
+                # Get product details (Price and Quantity) from the database
+                cursor.execute(
+                    "SELECT ProductId, Price, Quantity FROM products WHERE ProductName = ?",
+                    (product_name,),
+                )
+                product = cursor.fetchone()
+
+                # Check if the product exists
+                if not product:
+                    raise ValueError(f"Product not found: {product_name}")
+
+                # Check if there's enough stock
+                if product["Quantity"] < quantity:
+                    raise ValueError(f"Insufficient stock for {product_name}")
+
+                # Add order details to the orders_details table
+                cursor.execute(
+                    """INSERT INTO orders_details (OrderId, ProductId, Quantity, UnitPrice) 
+                       VALUES (?, ?, ?, ?)""",
+                    (order_id, product["ProductId"], quantity, product["Price"]),
+                )
+
+                # Update the product's inventory after the purchase
+                cursor.execute(
+                    "UPDATE products SET Quantity = Quantity - ? WHERE ProductId = ?",
+                    (quantity, product["ProductId"]),
+                )
+
+                # Calculate the total amount for the order
+                total_amount += Decimal(str(product["Price"])) * Decimal(str(quantity))
+
+                # Add the ordered product to the list of ordered products
+                ordered_products.append(
+                    {
+                        "name": product_name,
+                        "quantity": quantity,
+                        "unit_price": float(product["Price"]),
+                    }
+                )
+
+            # Commit the transaction to save the order and update inventory
+            cursor.execute("COMMIT")
+
+            return {
+                "order_id": str(order_id),
+                "status": "success",
+                "message": "Order created successfully",
+                "total_amount": float(total_amount),
+                "products": ordered_products,
+                "customer_id": str(customer_id),
+            }
+
+        except Exception as e:
+            # Rollback in case of any error
+            cursor.execute("ROLLBACK")
+            return {
+                "status": "error",
+                "message": str(e),
+                "customer_id": str(customer_id),
+            }
+        
+
+@tool
+def confirm_cart_and_provide_link(cart: list, customer_id: str) -> dict:
+    """
+    Confirms the cart and provides a link for the user to proceed with the purchase.
+    """
+    if not cart:
+        return {"status": "error", "message": "کارت شما خالی است"}
+
+    purchase_link = "https://palette-tech.io/"
+
+    return {
+        "status": "success",
+        "message": " لطفاً برای تکمیل سفارش، اطلاعات خود را در لینک زیر وارد کنید:" + purchase_link,
+    }
 
 @tool
 def check_order_status(

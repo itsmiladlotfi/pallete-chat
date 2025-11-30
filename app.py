@@ -94,7 +94,7 @@ def process_events(event):
 
 def handle_tool_approval(snapshot, event):
     """Handle tool approval process."""
-    st.write("⚠️ The assistant wants to perform an action. Do you approve?")
+    st.write("لطفا سبد خریدتون رو تایید کنید")
 
     last_message = snapshot.values.get("messages", [])[-1]
 
@@ -107,55 +107,70 @@ def handle_tool_approval(snapshot, event):
         with st.chat_message("assistant"):
             st.markdown("#### 🔧 Proposed Action")
 
-            with st.expander("View Function Details", expanded=True):
-                st.info(f"Function: **{tool_call['name']}**")
+            with st.expander("جزئیات نتیجه", expanded=True):
+                st.info(f" **وضعیت سبد خرید:**")
 
                 try:
                     args_formatted = json.dumps(tool_call["args"], indent=2)
-                    st.code(f"Arguments:\n{args_formatted}", language="json")
+
+                    st.markdown(f"نتیجه:\n{args_formatted}", language="json")
+                    url = "https://palette-tech.io/"
+                    st.write("Payment [link](%s)" % url)
+                    st.markdown("Payment [link](%s)" % url)
+                    
                 except:
                     st.code(f"Arguments:\n{tool_call['args']}")
 
     col1, col2 = st.columns(2)
 
     with col1:
-        if st.button("✅ Approve"):
+        if st.button("پرداخت شد"):
             with st.spinner("Processing..."):
                 try:
+                    # Assuming graph.invoke() processes something and returns a result
                     result = graph.invoke(None, st.session_state.config)
+                    
+                    # Assuming process_events is a function that does something with the result
                     process_events(result)
+                    
+                    # Clear the pending approval state
                     st.session_state.pending_approval = None
-                    st.rerun()
+                    
+                    # Trigger rerun after processing
+                    # st.rerun()
+
+                    # Show a success message after rerun
+                    st.success("پرداخت شما ثبت شد و به فروشنده اطلاع داده شد. پس از تایید فروشنده، سفارش شما آماده‌سازی خواهد شد.")
                 except Exception as e:
                     st.error(f"Error processing approval: {str(e)}")
 
-    with col2:
-        if st.button("❌ Deny"):
-            st.session_state.show_reason_input = True
+#     with col2:
+#         if st.button("❌ Deny"):
+#             st.session_state.show_reason_input = True
 
-        if st.session_state.get("show_reason_input", False):
-            reason = st.text_input("Please explain why you're denying this action:")
-            submit = st.button("Submit Denial", key="submit_denial")
-            if reason and submit:
-                with st.spinner("Processing..."):
-                    try:
-                        result = graph.invoke(
-                            {
-                                "messages": [
-                                    ToolMessage(
-                                        tool_call_id=last_message.tool_calls[0]["id"],
-                                        content=f"API call denied by user. Reasoning: '{reason}'. Continue assisting, accounting for the user's input.",
-                                    )
-                                ]
-                            },
-                            st.session_state.config,
-                        )
-                        process_events(result)
-                        st.session_state.pending_approval = None
-                        st.session_state.show_reason_input = False
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Error processing denial: {str(e)}")
+#         if st.session_state.get("show_reason_input", False):
+#             reason = st.text_input("Please explain why you're denying this action:")
+#             submit = st.button("Submit Denial", key="submit_denial")
+#             if reason and submit:
+#                 with st.spinner("Processing..."):
+#                     try:
+#                         result = graph.invoke(
+#                             {
+#                                 "messages": [
+#                                     ToolMessage(
+#                                         tool_call_id=last_message.tool_calls[0]["id"],
+#                                         content=f"API call denied by user. Reasoning: '{reason}'. Continue assisting, accounting for the user's input.",
+#                                     )
+#                                 ]
+#                             },
+#                             st.session_state.config,
+#                         )
+#                         process_events(result)
+#                         st.session_state.pending_approval = None
+#                         st.session_state.show_reason_input = False
+#                         st.rerun()
+#                     except Exception as e:
+#                         st.error(f"Error processing denial: {str(e)}")
 
 
 def main():
@@ -170,7 +185,7 @@ def main():
     # Bind chat input to the session state key
     if prompt := st.chat_input(
         "چه محصولی رو میخوای سفارش بدی؟", 
-        key="chat-input",  # Unique key for the chat input
+        key="chat-input",  #
     ):
         if prompt:
             human_message = HumanMessage(content=prompt)
